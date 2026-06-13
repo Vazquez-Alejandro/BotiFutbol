@@ -372,7 +372,7 @@ async def ayuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/buscar - Buscar un equipo\n"
         "/noticias - Ver noticias\n"
         "/live - Partidos en vivo\n"
-        "/mundial - Mundial 2022\n"
+        "/mundial - Mundial 2026\n"
         "/premium - Planes premium\n"
         "/afiliados - Programa de afiliados\n"
         "/stats - Estadísticas del bot\n"

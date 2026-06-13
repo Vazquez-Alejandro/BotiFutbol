@@ -499,38 +499,32 @@ async def cmd_afiliados(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def cmd_mundial(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
     await update.message.reply_text("🌍 Buscando datos del Mundial...")
-
-    from src.config import API_FOOTBALL_KEY
     import requests
 
-    headers = {
-        "x-rapidapi-host": "v3.football.api-sports.io",
-        "x-rapidapi-key": API_FOOTBALL_KEY,
-    }
-    base = "https://v3.football.api-sports.io"
-
     try:
-        fixtures_resp = requests.get(f"{base}/fixtures", headers=headers, params={"league": 1, "season": 2022}, timeout=15)
-        fixtures_data = fixtures_resp.json().get("response", []) if fixtures_resp.ok else []
+        resp = requests.get("https://wheniskickoff.com/data/v1/matches.json", timeout=15)
+        matches = resp.json().get("data", []) if resp.ok else []
 
-        msg = "🌍 *Mundial*\n\n"
-
-        resultados = [f for f in fixtures_data if f.get("fixture", {}).get("status", {}).get("short") == "FT"]
+        msg = "🌍 *Mundial 2026*\n\n"
+        resultados = [m for m in matches if m.get("status") == "FINISHED"]
         if resultados:
             msg += "*Últimos resultados:*\n"
             for p in resultados[-5:]:
-                teams = p.get("teams", {})
-                goals = p.get("goals", {})
-                home = teams.get("home", {}).get("name", "")
-                away = teams.get("away", {}).get("name", "")
-                g_h = goals.get("home", "-")
-                g_a = goals.get("away", "-")
-                ronda = p.get("fixture", {}).get("round", "")
-                msg += f"⚽ {home} {g_h} - {g_a} {away}  _{ronda}_\n"
+                home = p.get("home_name", p.get("home", ""))
+                away = p.get("away_name", p.get("away", ""))
+                msg += f"⚽ {home} {p['score_home']} - {p['score_away']} {away}\n"
 
-        msg += "\n📊 *Grupos:* usá la web 🌐 boti-futbol.vercel.app/mundial"
+        siguientes = [m for m in matches if m.get("status") not in ("FINISHED",)]
+        if siguientes:
+            msg += "\n*Próximos:*\n"
+            for p in siguientes[:3]:
+                home = p.get("home_name", p.get("home", ""))
+                away = p.get("away_name", p.get("away", ""))
+                fecha = p.get("date", "")[:10]
+                msg += f"📅 {home} vs {away} ({fecha})\n"
+
+        msg += "\n📊 *Grupos:* boti-futbol.vercel.app/mundial"
         await update.message.reply_text(msg, parse_mode="Markdown")
 
     except Exception as e:
