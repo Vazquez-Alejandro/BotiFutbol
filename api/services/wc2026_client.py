@@ -1,38 +1,96 @@
+import os
 import requests
 from typing import Optional
 from datetime import datetime
 
-BASE_URL = "https://wheniskickoff.com/data/v1"
+WC2026_API_BASE = "https://api.wc2026api.com"
+WHENISKICKOFF_BASE = "https://wheniskickoff.com/data/v1"
 
 
-def _fetch(endpoint: str) -> Optional[dict]:
+def _get_api_key() -> Optional[str]:
+    return os.environ.get("WC2026_API_KEY")
+
+
+def _is_live() -> bool:
+    return bool(_get_api_key())
+
+
+# --- WC2026 API (live) ---
+
+
+def _fetch_live(path: str) -> Optional[dict]:
+    key = _get_api_key()
+    if not key:
+        return None
     try:
-        r = requests.get(f"{BASE_URL}/{endpoint}", timeout=10)
+        r = requests.get(
+            f"{WC2026_API_BASE}{path}",
+            headers={"Authorization": f"Bearer {key}"},
+            timeout=10,
+        )
         r.raise_for_status()
         return r.json()
     except requests.RequestException as e:
-        print(f"WC2026 API error: {e}")
+        print(f"WC2026 live API error: {e}")
         return None
 
 
-def get_matches() -> list:
-    data = _fetch("matches.json")
-    return data.get("data", []) if data else []
+# --- wheniskickoff.com (static fallback) ---
 
 
-def get_teams() -> list:
-    data = _fetch("teams.json")
-    return data.get("data", []) if data else []
+def _fetch_static(endpoint: str) -> Optional[dict]:
+    try:
+        r = requests.get(f"{WHENISKICKOFF_BASE}/{endpoint}", timeout=10)
+        r.raise_for_status()
+        return r.json()
+    except requests.RequestException as e:
+        print(f"WC2026 static API error: {e}")
+        return None
 
 
-def get_groups() -> list:
-    data = _fetch("groups.json")
-    return data.get("data", []) if data else []
+# --- Standings ---
 
 
-def build_standings() -> list:
-    matches = get_matches()
-    teams = get_teams()
+def _build_standings_live() -> list:
+    teams_data = _fetch_live("/teams")
+    team_lookup = {t["code"]: t for t in (teams_data.get("data", []) if teams_data else [])}
+    data = _fetch_live("/groups")
+    groups = data.get("data", []) if data else []
+    result = []
+
+    for g in groups:
+        label = f"Grupo {g.get('name', '?')}"
+        standings = sorted(g.get("standings", []), key=lambda t: t.get("position", 99))
+        group_teams = []
+
+        for i, entry in enumerate(standings):
+            team_code = entry.get("team", "")
+            team_info = team_lookup.get(team_code, {})
+            group_teams.append({
+                "position": entry.get("position", i + 1),
+                "team_id": team_code,
+                "team_name": team_info.get("name", team_code),
+                "team_logo": team_info.get("flag_url", ""),
+                "points": entry.get("points", 0),
+                "played": entry.get("played", 0),
+                "win": entry.get("w", 0),
+                "draw": entry.get("d", 0),
+                "lose": entry.get("l", 0),
+                "goals_for": entry.get("gf", 0),
+                "goals_against": entry.get("ga", 0),
+                "goal_difference": entry.get("gd", 0),
+            })
+
+        result.append({"name": label, "teams": group_teams})
+
+    return result
+
+
+def _build_standings_static() -> list:
+    data = _fetch_static("matches.json")
+    matches = data.get("data", []) if data else []
+    data = _fetch_static("teams.json")
+    teams = data.get("data", []) if data else []
     team_lookup = {t["code"]: t for t in teams}
     group_matches: dict[str, list] = {}
 
@@ -42,9 +100,8 @@ def build_standings() -> list:
             group_matches.setdefault(g, []).append(m)
 
     result = []
-    group_names = sorted(group_matches.keys())
 
-    for gn in group_names:
+    for gn in sorted(group_matches.keys()):
         group_teams_map: dict[str, dict] = {}
         for code, t in team_lookup.items():
             if t.get("group") == gn:
@@ -52,63 +109,38 @@ def build_standings() -> list:
                     "team_code": code,
                     "team_name": t.get("name", code),
                     "team_flag": t.get("flag", ""),
-                    "played": 0,
-                    "win": 0,
-                    "draw": 0,
-                    "lose": 0,
-                    "goals_for": 0,
-                    "goals_against": 0,
-                    "points": 0,
+                    "played": 0, "win": 0, "draw": 0, "lose": 0,
+                    "goals_for": 0, "goals_against": 0, "points": 0,
                 }
 
         for m in group_matches[gn]:
-            home = m.get("home")
-            away = m.get("away")
-            sh = m.get("score_home")
-            sa = m.get("score_away")
-            status = m.get("status")
-
-            if status not in ("FINISHED",):
-                continue
-            if sh is None or sa is None:
+            home, away = m.get("home"), m.get("away")
+            sh, sa = m.get("score_home"), m.get("score_away")
+            if m.get("status") != "FINISHED" or sh is None or sa is None:
                 continue
 
-            if home in group_teams_map:
-                ht = group_teams_map[home]
-                ht["played"] += 1
-                ht["goals_for"] += sh
-                ht["goals_against"] += sa
-                if sh > sa:
-                    ht["win"] += 1
-                    ht["points"] += 3
-                elif sh == sa:
-                    ht["draw"] += 1
-                    ht["points"] += 1
-                else:
-                    ht["lose"] += 1
-
-            if away in group_teams_map:
-                at = group_teams_map[away]
-                at["played"] += 1
-                at["goals_for"] += sa
-                at["goals_against"] += sh
-                if sa > sh:
-                    at["win"] += 1
-                    at["points"] += 3
-                elif sa == sh:
-                    at["draw"] += 1
-                    at["points"] += 1
-                else:
-                    at["lose"] += 1
+            for code, side_score, opp_score in [(home, sh, sa), (away, sa, sh)]:
+                if code in group_teams_map:
+                    t = group_teams_map[code]
+                    t["played"] += 1
+                    t["goals_for"] += side_score
+                    t["goals_against"] += opp_score
+                    if side_score > opp_score:
+                        t["win"] += 1
+                        t["points"] += 3
+                    elif side_score == opp_score:
+                        t["draw"] += 1
+                        t["points"] += 1
+                    else:
+                        t["lose"] += 1
 
         sorted_teams = sorted(
             group_teams_map.values(),
             key=lambda t: (-t["points"], -(t["goals_for"] - t["goals_against"]), -t["goals_for"]),
         )
 
-        label = f"Grupo {gn}"
         result.append({
-            "name": label,
+            "name": f"Grupo {gn}",
             "teams": [
                 {
                     "position": i + 1,
@@ -131,9 +163,51 @@ def build_standings() -> list:
     return result
 
 
-def build_fixtures() -> list:
-    matches = get_matches()
+# --- Fixtures ---
+
+
+def _build_fixtures_live() -> list:
+    matches = _fetch_live("/matches")
+    matches = matches.get("data", []) if matches else []
     result = []
+
+    for i, m in enumerate(matches):
+        raw_status = m.get("status", "")
+        phase = m.get("phase", "")
+
+        if raw_status == "completed":
+            status = "FT"
+        elif raw_status == "in_progress":
+            status = "LIVE"
+        else:
+            status = "SCHEDULED"
+
+        elapsed_map = {"1H": "1H", "HT": "HT", "2H": "2H", "ET1": "ET1", "ET2": "ET2", "PEN": "PEN"}
+        elapsed = elapsed_map.get(phase) if status == "LIVE" else None
+
+        home = m.get("home_team") or {}
+        away = m.get("away_team") or {}
+
+        result.append({
+            "id": m.get("id", i),
+            "date": m.get("kickoff_utc", ""),
+            "status": status,
+            "elapsed": elapsed,
+            "round": m.get("round", "group"),
+            "group": m.get("group") or m.get("group_name", ""),
+            "home": {"id": home.get("code", ""), "name": home.get("name", ""), "logo": ""},
+            "away": {"id": away.get("code", ""), "name": away.get("name", ""), "logo": ""},
+            "goals": {"home": m.get("home_score"), "away": m.get("away_score")},
+        })
+
+    return result
+
+
+def _build_fixtures_static() -> list:
+    data = _fetch_static("matches.json")
+    matches = data.get("data", []) if data else []
+    result = []
+
     for i, m in enumerate(matches):
         status = m.get("status", "")
         short_status = "FT" if status == "FINISHED" else "LIVE" if status == "LIVE" else "SCHEDULED"
@@ -144,22 +218,33 @@ def build_fixtures() -> list:
             "elapsed": None,
             "round": m.get("phase", "group"),
             "group": m.get("group", ""),
-            "home": {
-                "id": m.get("home"),
-                "name": m.get("home_name", m.get("home")),
-                "logo": "",
-            },
-            "away": {
-                "id": m.get("away"),
-                "name": m.get("away_name", m.get("away")),
-                "logo": "",
-            },
-            "goals": {
-                "home": m.get("score_home"),
-                "away": m.get("score_away"),
-            },
+            "home": {"id": m.get("home"), "name": m.get("home_name", m.get("home")), "logo": ""},
+            "away": {"id": m.get("away"), "name": m.get("away_name", m.get("away")), "logo": ""},
+            "goals": {"home": m.get("score_home"), "away": m.get("score_away")},
         })
+
     return result
+
+
+# --- Public API ---
+
+
+def build_standings() -> list:
+    if _is_live():
+        try:
+            return _build_standings_live()
+        except Exception as e:
+            print(f"Live standings failed, falling back to static: {e}")
+    return _build_standings_static()
+
+
+def build_fixtures() -> list:
+    if _is_live():
+        try:
+            return _build_fixtures_live()
+        except Exception as e:
+            print(f"Live fixtures failed, falling back to static: {e}")
+    return _build_fixtures_static()
 
 
 def build_topscorers() -> list:
