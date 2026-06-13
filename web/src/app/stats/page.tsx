@@ -99,7 +99,7 @@ export default function StatsPage() {
                 </div>
 
                 <div className="text-right">
-                  <p className="text-primary font-bold text-lg">{s.goles}</p>
+                  <p className="text-primary font-bold text-lg">{s.goals}</p>
                   <p className="text-gray-500 text-xs">goles</p>
                 </div>
 
