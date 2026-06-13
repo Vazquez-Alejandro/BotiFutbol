@@ -1,4 +1,7 @@
 {
   "framework": "nextjs",
-  "rootDirectory": "web"
+  "rootDirectory": "web",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://botifutbol-api.onrender.com"
+  }
 }
