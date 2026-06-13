@@ -181,39 +181,60 @@ function FixturesTab({ fixtures }: { fixtures: Fixture[] }) {
     )
   }
 
+  const live = fixtures.filter(f => f.status === 'LIVE')
   const finished = fixtures.filter(f => f.status === 'FT')
-  const upcoming = fixtures.filter(f => f.status !== 'FT' && f.status !== 'AET' && f.status !== 'PEN')
+  const upcoming = fixtures.filter(f => f.status === 'SCHEDULED')
+
+  const renderMatch = (f: Fixture, showDate: boolean) => {
+    const date = new Date(f.date)
+    const dateStr = date.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+    const timeStr = date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+    const isLive = f.status === 'LIVE'
+    return (
+      <div key={f.id} className="bg-dark-card border border-dark-border rounded-xl p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <span className="text-white text-sm font-medium truncate">{f.home.name}</span>
+          </div>
+          <div className={`flex items-center gap-3 mx-4 ${isLive ? 'text-green-400' : ''}`}>
+            {isLive && <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />}
+            {finished.includes(f) ? (
+              <>
+                <span className="text-lg font-bold text-white">{f.goals.home ?? '-'}</span>
+                <span className="text-gray-500 text-xs">vs</span>
+                <span className="text-lg font-bold text-white">{f.goals.away ?? '-'}</span>
+              </>
+            ) : (
+              <div className="text-center">
+                <span className="text-yellow-400 text-xs font-bold">{showDate ? dateStr : ''}</span>
+                <span className="block text-gray-500 text-xs">{showDate ? timeStr : f.round}</span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
+            <span className="text-white text-sm font-medium truncate">{f.away.name}</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
+      {live.length > 0 && (
+        <div>
+          <h3 className="text-sm font-bold text-green-400 uppercase mb-3">En vivo</h3>
+          <div className="space-y-2">
+            {live.map(f => renderMatch(f, true))}
+          </div>
+        </div>
+      )}
+
       {finished.length > 0 && (
         <div>
           <h3 className="text-sm font-bold text-gray-500 uppercase mb-3">Resultados</h3>
           <div className="space-y-2">
-            {finished.map(f => (
-              <Link key={f.id} href={`/match/${f.id}`}>
-                <div className="bg-dark-card border border-dark-border rounded-xl p-4 hover:border-green-500/30 transition cursor-pointer">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      {f.home.logo && <img src={f.home.logo} alt="" className="w-6 h-6" />}
-                      <span className="text-white text-sm font-medium truncate">{f.home.name}</span>
-                    </div>
-                    <div className="flex items-center gap-3 mx-4">
-                      <span className="text-lg font-bold text-white">{f.goals.home ?? '-'}</span>
-                      <span className="text-gray-500 text-xs">vs</span>
-                      <span className="text-lg font-bold text-white">{f.goals.away ?? '-'}</span>
-                    </div>
-                    <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
-                      <span className="text-white text-sm font-medium truncate">{f.away.name}</span>
-                      {f.away.logo && <img src={f.away.logo} alt="" className="w-6 h-6" />}
-                    </div>
-                  </div>
-                  <div className="mt-2 text-center">
-                    <span className="text-xs text-gray-500">{f.round}</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
+            {finished.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(f => renderMatch(f, false))}
           </div>
         </div>
       )}
@@ -222,32 +243,7 @@ function FixturesTab({ fixtures }: { fixtures: Fixture[] }) {
         <div>
           <h3 className="text-sm font-bold text-gray-500 uppercase mb-3">Próximos</h3>
           <div className="space-y-2">
-            {upcoming.map(f => {
-              const date = new Date(f.date)
-              const dateStr = date.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
-              const timeStr = date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
-              return (
-                <div key={f.id} className="bg-dark-card border border-dark-border rounded-xl p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      {f.home.logo && <img src={f.home.logo} alt="" className="w-6 h-6" />}
-                      <span className="text-white text-sm font-medium truncate">{f.home.name}</span>
-                    </div>
-                    <div className="mx-4 text-center">
-                      <span className="text-yellow-400 text-xs font-bold">{dateStr}</span>
-                      <span className="block text-gray-500 text-xs">{timeStr}</span>
-                    </div>
-                    <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
-                      <span className="text-white text-sm font-medium truncate">{f.away.name}</span>
-                      {f.away.logo && <img src={f.away.logo} alt="" className="w-6 h-6" />}
-                    </div>
-                  </div>
-                  <div className="mt-2 text-center">
-                    <span className="text-xs text-gray-500">{f.round}</span>
-                  </div>
-                </div>
-              )
-            })}
+            {upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(f => renderMatch(f, true))}
           </div>
         </div>
       )}
