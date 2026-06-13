@@ -4,7 +4,7 @@ from typing import Optional
 router = APIRouter(prefix="/api/mundial", tags=["mundial"])
 
 LEAGUE_ID = 1
-SEASON = 2026
+SEASON = 2022
 
 
 @router.get("/standings")

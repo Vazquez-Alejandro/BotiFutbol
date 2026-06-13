@@ -74,7 +74,7 @@ export default function MundialPage() {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <Globe className="w-6 h-6 text-yellow-400" />
-          <h1 className="text-lg font-bold text-white">Mundial 2026</h1>
+          <h1 className="text-lg font-bold text-white">Mundial ⚽</h1>
         </div>
       </header>
 

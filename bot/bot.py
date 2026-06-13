@@ -512,44 +512,25 @@ async def cmd_mundial(update: Update, context: ContextTypes.DEFAULT_TYPE):
     base = "https://v3.football.api-sports.io"
 
     try:
-        fixtures_resp = requests.get(f"{base}/fixtures", headers=headers, params={"league": 1, "season": 2026, "last": 10}, timeout=10)
+        fixtures_resp = requests.get(f"{base}/fixtures", headers=headers, params={"league": 1, "season": 2022}, timeout=15)
         fixtures_data = fixtures_resp.json().get("response", []) if fixtures_resp.ok else []
 
-        msg = "🌍 *Mundial 2026*\n\n"
+        msg = "🌍 *Mundial*\n\n"
 
         resultados = [f for f in fixtures_data if f.get("fixture", {}).get("status", {}).get("short") == "FT"]
         if resultados:
             msg += "*Últimos resultados:*\n"
-            for p in resultados[:5]:
+            for p in resultados[-5:]:
                 teams = p.get("teams", {})
                 goals = p.get("goals", {})
                 home = teams.get("home", {}).get("name", "")
                 away = teams.get("away", {}).get("name", "")
                 g_h = goals.get("home", "-")
                 g_a = goals.get("away", "-")
-                msg += f"⚽ {home} {g_h} - {g_a} {away}\n"
+                ronda = p.get("fixture", {}).get("round", "")
+                msg += f"⚽ {home} {g_h} - {g_a} {away}  _{ronda}_\n"
 
-        proximos = [f for f in fixtures_data if f.get("fixture", {}).get("status", {}).get("short") not in ("FT", "AET", "PEN")]
-        if proximos:
-            msg += "\n*Próximos:*\n"
-            for p in proximos[:5]:
-                fixture = p.get("fixture", {})
-                teams = p.get("teams", {})
-                date = fixture.get("date", "")
-                home = teams.get("home", {}).get("name", "")
-                away = teams.get("away", {}).get("name", "")
-                try:
-                    from datetime import datetime
-                    d = datetime.fromisoformat(date.replace("Z", "+00:00"))
-                    date_str = d.strftime("%d/%m %H:%M")
-                except:
-                    date_str = date[:10]
-                msg += f"📅 {home} vs {away} — {date_str}\n"
-
-        if not resultados and not proximos:
-            msg += "No hay partidos disponibles del Mundial.\n"
-
-        msg += "\n📊 Usá /mundial para actualizar\n🌐 Web: botifutbol.vercel.app/mundial"
+        msg += "\n📊 *Grupos:* usá la web 🌐 boti-futbol.vercel.app/mundial"
         await update.message.reply_text(msg, parse_mode="Markdown")
 
     except Exception as e:

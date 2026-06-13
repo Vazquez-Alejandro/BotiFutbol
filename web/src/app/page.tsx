@@ -57,7 +57,7 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <Globe className="w-6 h-6 text-yellow-400" />
                   <div>
-                    <h3 className="font-bold text-white">Mundial 2026</h3>
+                    <h3 className="font-bold text-white">Mundial</h3>
                     <p className="text-gray-400 text-sm">Grupos, resultados, fixture y goleadores</p>
                   </div>
                 </div>
@@ -146,7 +146,7 @@ export default function Home() {
           <div className="space-y-4">
             <Step number={1} text="Conectá tu cuenta de Telegram con /start" />
             <Step number={2} text="Elegí tus equipos favoritos navegando por continentes" />
-            <Step number={3} text="Recibí goles, tarjetos y resultados en tiempo real" />
+            <Step number={3} text="Recibí goles, tarjetas y resultados en tiempo real" />
             <Step number={4} text="Usá la web para ver clasificación, fixture y estadísticas" />
             <Step number={5} text="Competí con amigos y ganá con el programa de afiliados" />
           </div>

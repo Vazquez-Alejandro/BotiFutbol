@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list = [
         "http://localhost:3000",
         "https://botifutbol.vercel.app",
-        "https://botifutbol-alejandro.vercel.app",
+        "https://boti-futbol.vercel.app",
     ]
 
     class Config:
