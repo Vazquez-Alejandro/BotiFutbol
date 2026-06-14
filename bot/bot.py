@@ -525,6 +525,7 @@ async def cmd_mundial(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 msg += f"📅 {home} vs {away} ({fecha})\n"
 
         msg += "\n📊 *Grupos:* boti-futbol.vercel.app/mundial"
+        msg += "\n\n💡 *Tip:* En 'Buscar Equipo' > 'Selecciones' podés agregar selecciones del Mundial 2026 a tu lista y recibir noticias."
         await update.message.reply_text(msg, parse_mode="Markdown")
 
     except Exception as e:

@@ -185,18 +185,33 @@ async def seleccionar_liga(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if ls["id"] == liga_id:
                 season = ls["season"]
                 break
-        equipos = EQUIPOS_POR_LIGA.get((liga_id, season), [])
-        if not equipos:
-            standings = football_client.obtener_clasificacion(liga_id, season)
-            for group in standings:
-                league_data = group.get("league", {})
-                for group_standings in league_data.get("standings", []):
-                    for team_entry in group_standings:
-                        team = team_entry.get("team", {})
-                        tid = team.get("id")
-                        tname = team.get("name")
-                        if tid and tname and not any(e["id"] == tid for e in equipos):
-                            equipos.append({"id": tid, "nombre": tname})
+
+        if liga_id == 2026:
+            try:
+                import requests
+                r = requests.get("https://wheniskickoff.com/data/v1/teams.json", timeout=10)
+                data = r.json()
+                seen = set()
+                for i, t in enumerate(data.get("data", [])):
+                    code = t.get("code")
+                    if code and code not in seen:
+                        seen.add(code)
+                        equipos.append({"id": 20260000 + i, "nombre": t.get("name", code)})
+            except Exception as e:
+                print(f"Error fetching WC2026 teams: {e}")
+        else:
+            equipos = EQUIPOS_POR_LIGA.get((liga_id, season), [])
+            if not equipos:
+                standings = football_client.obtener_clasificacion(liga_id, season)
+                for group in standings:
+                    league_data = group.get("league", {})
+                    for group_standings in league_data.get("standings", []):
+                        for team_entry in group_standings:
+                            team = team_entry.get("team", {})
+                            tid = team.get("id")
+                            tname = team.get("name")
+                            if tid and tname and not any(e["id"] == tid for e in equipos):
+                                equipos.append({"id": tid, "nombre": tname})
     else:
         equipos = EQUIPOS_POR_LIGA.get((liga_id, 2024), [])
 

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=BotiFutbol
+Comment=Fútbol en tiempo real, noticias y Mundial 2026
+Exec=xdg-open https://boti-futbol.vercel.app/
+Icon=/home/alejandro/Escritorio/Proyectos/botifutbol/web/public/logo.png
+Terminal=false
+Type=Application
+Categories=Network;
+StartupNotify=true

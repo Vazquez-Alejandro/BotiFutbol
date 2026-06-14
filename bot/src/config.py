@@ -25,6 +25,7 @@ LIGAS_SELECCIONES = [
     {"id": 1, "nombre": "🌍 Mundial", "season": 2022},
     {"id": 9, "nombre": "🌎 Copa América", "season": 2024},
     {"id": 4, "nombre": "🌍 Eurocopa", "season": 2024},
+    {"id": 2026, "nombre": "⚽ Mundial 2026", "season": 2026},
 ]
 
 PAISES_POR_CONTINENTE = {
