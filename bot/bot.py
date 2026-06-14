@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, time as dt_time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -589,8 +589,8 @@ def main():
     job_queue.run_repeating(check_match_notifications, interval=60, first=15)
     job_queue.run_repeating(check_live_matches, interval=60, first=30)
     job_queue.run_repeating(check_news, interval=30 * 60, first=60)
-    job_queue.run_daily(resumen_diario, time=timezone.utc, days=(0, 1, 2, 3, 4, 5, 6))
-    job_queue.run_weekly(resumen_semanal, day_of_week=0, time=timezone.utc)
+    job_queue.run_daily(resumen_diario, time=dt_time(hour=9, tzinfo=timezone.utc), days=(0, 1, 2, 3, 4, 5, 6))
+    job_queue.run_daily(resumen_semanal, time=dt_time(hour=10, tzinfo=timezone.utc), days=(0,))
 
     logger.info("BotiFutbol está corriendo! 🚀")
     app.run_polling(

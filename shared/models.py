@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Float
+from sqlalchemy import Column, Integer, BigInteger, String, Boolean, DateTime, ForeignKey, Text, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from shared.database import Base
@@ -96,7 +96,7 @@ class PartidoGuardado(Base):
 class BotUsuario(Base):
     __tablename__ = "bot_usuarios"
 
-    chat_id = Column(Integer, primary_key=True)
+    chat_id = Column(BigInteger, primary_key=True)
     username = Column(String, nullable=True)
     equipos = Column(Text, default="[]")
     activo = Column(Boolean, default=True)
@@ -107,7 +107,7 @@ class EventoEnviado(Base):
     __tablename__ = "eventos_enviados"
 
     id = Column(Integer, primary_key=True, index=True)
-    chat_id = Column(Integer, index=True)
+    chat_id = Column(BigInteger, index=True)
     evento_id = Column(String, index=True)
     tipo = Column(String, nullable=True)
     enviado_en = Column(DateTime, default=datetime.utcnow)
@@ -117,7 +117,7 @@ class NoticiaEnviada(Base):
     __tablename__ = "noticias_enviadas"
 
     id = Column(Integer, primary_key=True, index=True)
-    chat_id = Column(Integer, index=True)
+    chat_id = Column(BigInteger, index=True)
     noticia_url = Column(String, unique=True)
     enviado_en = Column(DateTime, default=datetime.utcnow)
 
@@ -126,7 +126,7 @@ class PartidoProgramado(Base):
     __tablename__ = "partidos_programados"
 
     id = Column(Integer, primary_key=True, index=True)
-    chat_id = Column(Integer, index=True)
+    chat_id = Column(BigInteger, index=True)
     equipo_id = Column(Integer)
     equipo_nombre = Column(String)
     fixture_id = Column(String, unique=True, index=True)
