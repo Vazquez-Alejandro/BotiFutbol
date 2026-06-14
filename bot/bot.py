@@ -25,8 +25,8 @@ from src.handlers import (
     start, mis_equipos, buscar_equipo,
     seleccionar_continente, seleccionar_pais, seleccionar_liga,
     agregar_equipo_handler, eliminar_equipo_handler,
-    noticias, ayuda, menu_principal,
-    cmd_equipos, cmd_buscar, cmd_noticias, cmd_stats,
+    noticias, ayuda, menu_principal, cmd_menu,
+    cmd_equipos, cmd_buscar, cmd_noticias, cmd_stats, texto_cualquiera,
 )
 from src.analytics import init_analytics, registrar_evento
 
@@ -584,6 +584,9 @@ def main():
     app.add_handler(CommandHandler("afiliados", cmd_afiliados))
     app.add_handler(CommandHandler("live", cmd_live))
     app.add_handler(CommandHandler("mundial", cmd_mundial))
+    app.add_handler(CommandHandler("menu", cmd_menu))
+
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, texto_cualquiera))
 
     app.add_handler(CallbackQueryHandler(menu_principal, pattern="^menu_principal$"))
     app.add_handler(CallbackQueryHandler(mis_equipos, pattern="^mis_equipos$"))

@@ -388,10 +388,12 @@ async def ayuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/noticias - Ver noticias\n"
         "/live - Partidos en vivo\n"
         "/mundial - Mundial 2026\n"
+        "/menu - Mostrar menú principal\n"
         "/premium - Planes premium\n"
         "/afiliados - Programa de afiliados\n"
         "/stats - Estadísticas del bot\n"
         "/ayuda - Mostrar esta ayuda\n\n"
+        "💡 *Tip:* En cualquier momento mandá /menu o cualquier texto para volver al menú principal.\n\n"
         "*¿Cómo funciona?*\n"
         "1. Elegí los equipos que querés seguir\n"
         "2. Recibirás noticias y actualizaciones automáticamente\n"
@@ -508,3 +510,17 @@ async def cmd_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"*Tasa de conversión:* {((conversiones/clicks)*100) if clicks > 0 else 0:.1f}%"
     )
     await update.message.reply_text(texto, parse_mode="Markdown")
+
+
+async def cmd_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    reply_markup = InlineKeyboardMarkup(keyboard_menu_principal())
+    await update.message.reply_text(
+        "Menú principal:", reply_markup=reply_markup
+    )
+
+
+async def texto_cualquiera(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    reply_markup = InlineKeyboardMarkup(keyboard_menu_principal())
+    await update.message.reply_text(
+        "Elegí una opción del menú:", reply_markup=reply_markup
+    )
