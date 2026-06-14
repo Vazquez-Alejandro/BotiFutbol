@@ -1,6 +1,10 @@
+import time
 import requests
 from typing import Optional
 from src.config import NEWS_API_KEY, NEWS_API_BASE_URL
+
+_news_cache: dict = {}
+_news_cache_ttl = 2 * 60 * 60
 
 
 class NewsAPIClient:
@@ -70,7 +74,12 @@ class NewsAPIClient:
 
         return tiene_palabras_futbol or dominio_es_deportivo
 
-    def obtener_noticias_equipo(self, nombre_equipo: str, page_size: int = 5) -> list:
+    def obtener_noticias_equipo(self, nombre_equipo: str, page_size: int = 5, use_cache: bool = True) -> list:
+        if use_cache:
+            cached = _news_cache.get(nombre_equipo)
+            if cached and time.time() - cached["ts"] < _news_cache_ttl:
+                return cached["data"][:page_size]
+
         query = f'"{nombre_equipo}" fútbol'
         result = self._request({
             "q": query,
@@ -98,6 +107,9 @@ class NewsAPIClient:
                 })
             if len(filtrados) >= page_size:
                 break
+
+        if use_cache and filtrados:
+            _news_cache[nombre_equipo] = {"data": filtrados, "ts": time.time()}
         return filtrados
 
     def obtener_noticias_liga(self, nombre_liga: str, page_size: int = 5) -> list:

@@ -17,6 +17,7 @@ from src.database import (
     marcar_partido_en_vivo, actualizar_estado_partido, marcar_notificado,
     verificar_notificado, eliminar_partido,
     verificar_noticia_enviada, registrar_noticia_enviada,
+    verificar_evento_enviado, registrar_evento_enviado,
     agregar_equipo, eliminar_equipo,
 )
 from src.api_client import football_client
@@ -93,7 +94,7 @@ async def enviar_con_afiliado(app, chat_id: int, texto: str, parse_mode="Markdow
     try:
         await app.send_message(chat_id=chat_id, text=texto, parse_mode=parse_mode)
 
-        if chat_id % 3 == 0:
+        if chat_id % 20 == 0:
             afiliado = AFILIADOS["bet365"]
             await app.send_message(
                 chat_id=chat_id,
@@ -343,7 +344,7 @@ async def check_live_matches(context: ContextTypes.DEFAULT_TYPE):
                     ev_time = ev.get("time", {}).get("elapsed", 0)
                     ev_key = f"{fixture_id}_{ev_tipo}_{ev_detail}_{ev_time}"
 
-                    if verificar_notificado(ev_key, "notificado_"):
+                    if verificar_evento_enviado(chat_id, ev_key):
                         continue
 
                     if ev_detail == "Red Card":
@@ -355,7 +356,7 @@ async def check_live_matches(context: ContextTypes.DEFAULT_TYPE):
                             f"⏱️ Minuto {ev_time}'\n\n"
                             f"Partido que se pone picante 🔥",
                         )
-                        marcar_notificado(ev_key, "notificado_")
+                        registrar_evento_enviado(chat_id, ev_key, "red_card")
                         registrar_evento("red_card", {"fixture": fixture_id, "player": ev_player})
 
                     elif ev_detail in ("Yellow Card",):
@@ -366,7 +367,7 @@ async def check_live_matches(context: ContextTypes.DEFAULT_TYPE):
                             f"⏱️ Minuto {ev_time}'"
                         )
                         await app.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown")
-                        marcar_notificado(ev_key, "notificado_")
+                        registrar_evento_enviado(chat_id, ev_key, "yellow_card")
 
                     elif ev_detail == "Penalty" and ev_tipo == "Goal":
                         await enviar_con_afiliado(
@@ -377,7 +378,7 @@ async def check_live_matches(context: ContextTypes.DEFAULT_TYPE):
                             f"⏱️ Minuto {ev_time}'\n\n"
                             f"Nervios de acero 🧊",
                         )
-                        marcar_notificado(ev_key, "notificado_")
+                        registrar_evento_enviado(chat_id, ev_key, "penalty_goal")
                         registrar_evento("penalty_goal", {"fixture": fixture_id})
 
                     elif ev_detail == "Missed Penalty":
@@ -386,7 +387,7 @@ async def check_live_matches(context: ContextTypes.DEFAULT_TYPE):
                             text=f"😱 *¡PENAL ERRADO!*\n\n👤 {ev_player}\n📍 {ev_team}\n⏱️ Minuto {ev_time}'",
                             parse_mode="Markdown",
                         )
-                        marcar_notificado(ev_key, "notificado_")
+                        registrar_evento_enviado(chat_id, ev_key, "missed_penalty")
 
             except Exception as e:
                 logger.error(f"Error eventos: {e}")
@@ -405,16 +406,28 @@ async def check_news(context: ContextTypes.DEFAULT_TYPE):
         from src.news_client import news_client
         app = context.bot
         usuarios = obtener_todos_los_usuarios()
+
+        news_by_team: dict = {}
         for usuario in usuarios:
             if not usuario.equipos:
                 continue
             for equipo in usuario.equipos:
+                team_name = equipo["nombre"]
+                if team_name in news_by_team:
+                    continue
                 try:
                     articulos = news_client.obtener_noticias_equipo(
-                        equipo["nombre"], page_size=3
+                        team_name, page_size=3, use_cache=True
                     )
+                    news_by_team[team_name] = articulos
                 except Exception:
-                    continue
+                    news_by_team[team_name] = []
+
+        for usuario in usuarios:
+            if not usuario.equipos:
+                continue
+            for equipo in usuario.equipos:
+                articulos = news_by_team.get(equipo["nombre"], [])
                 for art in articulos:
                     url = art.get("url", "")
                     if not url or verificar_noticia_enviada(usuario.chat_id, url):
@@ -589,7 +602,7 @@ def main():
     job_queue.run_repeating(sync_fixtures, interval=6 * 60 * 60, first=10)
     job_queue.run_repeating(check_match_notifications, interval=60, first=15)
     job_queue.run_repeating(check_live_matches, interval=60, first=30)
-    job_queue.run_repeating(check_news, interval=30 * 60, first=60)
+    job_queue.run_repeating(check_news, interval=4 * 60 * 60, first=60)
     job_queue.run_daily(resumen_diario, time=dt_time(hour=9, tzinfo=timezone.utc), days=(0, 1, 2, 3, 4, 5, 6))
     job_queue.run_daily(resumen_semanal, time=dt_time(hour=10, tzinfo=timezone.utc), days=(0,))
 

@@ -1,10 +1,25 @@
 import os
+import time
 import requests
 from typing import Optional
 from datetime import datetime
 
 WC2026_API_BASE = "https://api.wc2026api.com"
 WHENISKICKOFF_BASE = "https://wheniskickoff.com/data/v1"
+
+_cache: dict = {}
+_cache_ttl: int = 300
+
+
+def _cache_get(key: str):
+    entry = _cache.get(key)
+    if entry and time.time() - entry["ts"] < _cache_ttl:
+        return entry["data"]
+    return None
+
+
+def _cache_set(key: str, data):
+    _cache[key] = {"data": data, "ts": time.time()}
 
 
 def _get_api_key() -> Optional[str]:
@@ -39,10 +54,15 @@ def _fetch_live(path: str) -> Optional[dict]:
 
 
 def _fetch_static(endpoint: str) -> Optional[dict]:
+    cached = _cache_get(f"static:{endpoint}")
+    if cached:
+        return cached
     try:
         r = requests.get(f"{WHENISKICKOFF_BASE}/{endpoint}", timeout=10)
         r.raise_for_status()
-        return r.json()
+        data = r.json()
+        _cache_set(f"static:{endpoint}", data)
+        return data
     except requests.RequestException as e:
         print(f"WC2026 static API error: {e}")
         return None
