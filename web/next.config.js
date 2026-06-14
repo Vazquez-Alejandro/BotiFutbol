@@ -6,6 +6,18 @@ const nextConfig = {
       { protocol: 'https', hostname: 'logo.clearbit.com' },
     ],
   },
+  async headers() {
+    return [
+      {
+        source: '/manifest.json',
+        headers: [{ key: 'Content-Type', value: 'application/json' }],
+      },
+      {
+        source: '/sw.js',
+        headers: [{ key: 'Content-Type', value: 'application/javascript' }],
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig
